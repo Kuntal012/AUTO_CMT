@@ -1,0 +1,9 @@
+LON -121.2,-120.7
+LAT 35.4,35.9
+DDEG 0.1 
+DTIME 1 
+MAXTIME 3400 
+DEPTH 34,36,38,40,42,44,46 
+BTIME 94 
+TWIND 90 
+GFPATH /rhome/kchau012/bigdata/Taiwan_New/GF_Taiwan_3/ 

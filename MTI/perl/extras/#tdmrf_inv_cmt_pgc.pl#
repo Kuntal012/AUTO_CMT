@@ -1,0 +1,277 @@
+#!/usr/bin/perl
+
+use Cwd;
+use Time::Local;
+
+#####################################################################
+########################################################
+##########Centroid Moment tensor routine ###############
+########################################################
+## preparation for paramter ###
+$bestvr=$maxvr ;
+$cmttime=$ctime ;
+$cmtdepth=$cdep  ;
+$cmtlat=$lat ;
+$cmtlon=$lon ;
+###################
+### set PRAM #######
+$retrynum=50 ;
+$first_try_flag=0 ;
+$sparse_flag=0 ;
+#############################################################
+ phase_retry:
+    if($first_try_flag==1){
+	$cmtlat=$newlat ;
+	$cmtlon=$newlon ;
+	$cmtdepth=$newdepth ;
+	$cmttime=$newtime ;
+    }
+
+
+if($sparse_flag==0){
+    $timespan=$TIME_SPAN_SPARSE ;
+}else{
+    $timespan=$TIME_SPAN ;
+}
+$minons=$cmttime-$timespan ;
+$maxons=$cmttime+$timespan ;
+
+##################################
+if($sparse_flag==0){
+  $depspan=$DEP_RANG_SPARSE ;
+  $sopt="-Sparse" ;
+}else{
+  $depspan=$DEP_RANG ;
+}
+
+$mindep=$cmtdepth-$depspan ;
+if($mindep<0){
+  $mindep=0 ;
+}
+$maxdep=$cmtdepth+$depspan ;
+
+#print "############ DEPTH $depspan\n" ;
+##########################################################################
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+		  $grend,$minons,$maxons,$mindep,$maxdep,$windowsize,$sopt) ;
+print $cmdline,"\n" ;
+### SARCH CMT #########
+#5 2 6
+#1   3
+#4 0 7
+##########################################
+if($sparse_flag==0){ 
+  $span=$HOR_SPAN_SPARSE ;
+}else{
+  $span=$HOR_SPAN ;
+}
+open(CMD, "$PROJECT -C$cmtlon\/$cmtlat -A0 -G$span -L0\/$span -Q |") ;
+print "$PROJECT -C$cmtlon\/$cmtlat -A0 -G$span -L0\/$span -Q\n" ;
+$outproj=<CMD> ;
+$outproj=<CMD> ;
+chop($outproj) ;
+close(CMD) ;
+@data=split(/\s+/,$outproj) ;
+$dhypolat=$data[1]-$cmtlat ;
+
+open(CMD, "$PROJECT -C$cmtlon\/$cmtlat -A90 -G$span -L0\/$span -Q |") ;
+print "$PROJECT -C$cmtlon\/$cmtlat -A90 -G$span -L0\/$span -Q\n" ;
+$outproj=<CMD> ;
+$outproj=<CMD> ;
+chop($outproj) ;
+close(CMD) ;
+@data=split(/\s+/,$outproj) ;
+$dhypolon=$data[0]-$cmtlon ;
+############################################
+#####################################
+for( $i=0,$goflag=0 ; $i<8 ; $i++){
+  
+  ### make event_hypoinfo.list#######
+  if($first_try_flag==1){
+    if($befor_move_dire_num==0){
+      if($i==1){
+	$i=4 ;
+      }elsif($i==5){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==1){
+      if($i==0){
+	$i=1 ;
+      }elsif($i==2){
+	$i=4 ;
+      }
+    }elsif($befor_move_dire_num==2){
+      if($i==0){
+	$i=2 ;
+      }elsif($i==3){
+	$i=5 ;
+      }
+    }elsif($befor_move_dire_num==3){
+      if($i==0){
+	$i=3 ;
+      }elsif($i==4){
+	$i=6 ;
+      }
+    }elsif($befor_move_dire_num==4){
+      if($i==2){
+	$i=4 ;
+      }elsif($i==6){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==5){
+      if($i==0){
+	$i=1 ;
+      }elsif($i==3){
+	$i=4 ;
+      }
+    }elsif($befor_move_dire_num==6){
+      if($i==0){
+	$i=2 ;
+      }elsif($i==4){
+	$i=5 ;
+      }
+    }elsif($befor_move_dire_num==7){
+      if($i==1){
+	$i=3 ;
+      }elsif($i==5){
+	$i=6 ;
+      }
+    }  
+  }
+  if($i==0){
+    $nlon=$cmtlon  ;
+    $nlat=$cmtlat-$dhypolat ;
+  }elsif($i==1){
+    $nlon=$cmtlon-$dhypolon ;
+    $nlat=$cmtlat ;
+  }elsif($i==2){
+    $nlon=$cmtlon  ;
+    $nlat=$cmtlat+$dhypolat ;
+  }elsif($i==3){
+    $nlon=$cmtlon+$dhypolon ;
+    $nlat=$cmtlat ;
+  }elsif($i==4){
+    $nlon=$cmtlon-$dhypolon ;
+    $nlat=$cmtlat-$dhypolat ;
+  }elsif($i==5){
+    $nlon=$cmtlon-$dhypolon ;
+    $nlat=$cmtlat+$dhypolat ;
+  }elsif($i==6){
+    $nlon=$cmtlon+$dhypolon ;
+    $nlat=$cmtlat+$dhypolat ;
+  }elsif($i==7){
+    $nlon=$cmtlon+$dhypolon ;
+    $nlat=$cmtlat-$dhypolat ;
+  }
+  
+  open( OUT, ">event_hypoinfo.list") ;
+  printf "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s ",
+    $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$nlat,$nlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+  printf OUT "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s\n",
+    $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$nlat,$nlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+  close(OUT) ;
+  #############################
+  system"$TDMRFGRID $cmdline 1> /dev/null 2>&1" ;
+  #open( IN, "itr_res_inv.out") ;
+  open(IN, "grid_tdmrf_inv.out") ;
+  $inmax=0 ;
+  while(<IN>){
+   chop($_) ;
+    @data=split(/\s+/,$_) ;
+    if( $data[10] > $bestvr){
+      $bestvr=$data[10] ;
+      $newlat=$nlat ;
+      $newlon=$nlon ;
+      $newdepth=$data[8] ;
+      $newtime=$data[5] ;
+      $goflag=1 ;
+      $move_dire_num=$i ;
+    }if($data[10] > $inmax ){
+      $inmax=$data[10] ;
+    }
+  }
+  close(IN) ;
+  printf "VR %1.3lf\/%1.3lf grid_num = %d\n",$inmax, $bestvr,$i ;
+  #############################
+  if($first_try_flag==1){
+    if($befor_move_dire_num==1){
+      if($i==5){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==2){
+      if($i==6){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==5){
+      if($i==6){
+	$i=7 ;
+      }
+    }  
+  }
+}
+  
+if($goflag == 1 && $retrynum >=0 ){
+  $retrynum-- ;
+  print "GOTO RETRY PHASE $retrynum $bestvr $move_dire_num\n" ;
+  $first_try_flag=1 ;
+  $befor_move_dire_num=$move_dire_num ;
+  goto phase_retry;
+}
+if($sparse_flag==0){
+  $sopt="" ;
+  $sparse_flag=1 ;
+  $retrynum=10 ;
+  $befor_move_dire_num=8 ;
+  goto phase_retry;
+}
+  
+### FOR FINAL RESULT ###################
+open( OUT, ">event_hypoinfo.list") ;
+printf "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s\n",
+  $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$cmtlat,$cmtlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+printf OUT  "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s\n",
+  $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$cmtlat,$cmtlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+close(OUT) ;
+$mindep=$cmtdepth-20 ;
+if($mindep<0){
+  $mindep=0 ;
+}
+$maxdep=$cmtdepth+20 ;
+open( OUT,"> final_exe3.log") ;
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+		  $grend,$cmttime,$cmttime,$mindep,$maxdep,$windowsize,$sopt ) ;
+print $cmdline,"\n" ;
+printf OUT "%s %s\n",$TDMRF, $cmdline ;
+#die "BREAK!!!\n" ;
+system"$TDMRF $cmdline 1> /dev/null 2>&1" ;
+
+$tdmrfinf=sprintf("tdmrf_inv.in_%04d_%03d",$cmttime,$cmtdepth) ; 
+system"$TDMRFI $tdmrfinf > /dev/null" ;
+system"$TDMRFG $tdmrfinf $mapopt > /dev/null" ;
+print OUT "$TDMRFI $tdmrfinf\n" ;
+print OUT "$TDMRFG $tdmrfinf\n" ;
+close(OUT) ;
+system "cp plot.ps plot_cmt.ps" ;
+system "cp event_hypoinfo.list event_hypoinfo_precmt.list" ;
+#####################################################################
+######################################################################
+phase1:
+if($leftflag==0){
+  system "rm [A-Z]*" ;
+  system "rm tdmrf_inv.*" ;
+  system "rm tmp*" ;
+  system "rm *.tmp" ;
+  system "rm *.TLE *.TLN *.BHE *.BHN *.BHZ" ;
+}
+######## 
+#### CHANGE DIR $WORKHOME ###
+chdir("../") ;
+#############################
+
+
+
+
+  
+  

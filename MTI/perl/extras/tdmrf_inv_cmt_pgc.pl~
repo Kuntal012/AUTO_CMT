@@ -1,0 +1,1213 @@
+#!/usr/bin/perl
+
+use Cwd;
+use Time::Local;
+##################################################
+### DEFAULT ######################################
+### COMMON ######
+$winmin=12 ;
+$MAGSHD=0.3 ;
+$INIT_OFF[0]=-3 ;
+$INIT_OFF[1]=6 ;
+$INIT_DEP=6 ;
+$FINA_OFF[0]=-2 ;
+$FINA_OFF[1]=8 ;
+$FINA_DEP=15 ;
+#################
+### MAG #########
+@MAGRANC=( 4.0, 5.0, 6.0, 7.0, 8.0 ) ;
+@MAGPRM1=(120, 30, 350, 0.02, 0.05, 3 ) ;
+@MAGPRM2=(150,100, 400, 0.02, 0.05, 4 ) ;
+@MAGPRM3=(150,100, 400, 0.02, 0.05, 4 ) ;
+@MAGPRM4=(180,100, 500, 0.02, 0.05, 4 ) ;
+@MAGPRM5=(180,200, 600, 0.01, 0.05, 4 ) ;
+@MAGPRM6=(300,400, 900,0.005, 0.02, 4 ) ;
+$GRNLAB1="LP5020SYN" ;
+$GRNLAB2="LP5020SYN" ;
+$GRNLAB3="LP5020SYN" ;
+$GRNLAB4="LP5020SYN" ;
+$GRNLAB5="LP20SYN" ;
+$GRNLAB6="LP50SYN" ;
+#### INITIALIZE #############
+$fnetmaxstation=0 ;
+$tiltmaxstation=0 ;
+$iteflag=0 ;
+$leftflag=0 ;
+$oldflag=0 ;
+$zflag=0 ;
+$sopt="" ;
+$paramflag=0 ;
+##### read ARGV ##########
+for($i=0, $argvfla; $i<=$#ARGV; $i++){ 
+  if($ARGV[$i] =~ "-R"){ #-R(num_of_used_Reciever_in_f-net)/(num_of_Hi-net)
+    $ARGV[$i] =~ s/^-R// ;
+    @data=split(/\//,$ARGV[$i]) ;
+    $fnetmaxstation=$data[0] ;
+    $tiltmaxstation=$data[1] ;
+  }elsif($ARGV[$i] =~ "-T"){
+    $ARGV[$i] =~ s/^-T// ;
+    $hypodata[0]=substr($ARGV[$i],0,4) ;
+    $hypodata[1]=substr($ARGV[$i],4,2) ;
+    $hypodata[2]=substr($ARGV[$i],6,2) ;
+    $hypodata[3]=substr($ARGV[$i],8,2) ;
+    $hypodata[4]=substr($ARGV[$i],10,2) ;
+    $hypodata[5]=substr($ARGV[$i],12) ;
+  }elsif($ARGV[$i] =~ "-S"){ #-S(Source_longitude)/(latitude)/(dep)/(mag)
+    $ARGV[$i]=~ s/^-S// ;
+    @data=split(/\//,$ARGV[$i]) ;
+    $hypodata[7]=$data[0] ;
+    $hypodata[6]=$data[1] ;
+    $hypodata[8]=$data[2] ;
+    $hypodata[9]=$data[3] ;
+  }elsif($ARGV[$i] =~ "-V"){ #-V(threshhold_of_Vr1)/(vr2)
+    $ARGV[$i] =~ s/^-V// ;
+    @data=split(/\//,$ARGV[$i]) ;
+    $VRSHD=$data[0] ;
+    $VRSHD2=$data[1] ;
+  }elsif($ARGV[$i]=~ "-D"){ # -D(event_Dir)
+    $ARGV[$i] =~ s/^-D// ;
+    $eventdir=$ARGV[$i] ;
+    $hypodata[10]=$ARGV[$i] ;
+  }elsif($ARGV[$i] =~ "-U"){ # -U   Used_wave_data_in_dir
+    $iteflag=1 ;
+  }elsif($ARGV[$i] =~ "-L"){ # -L   Left wave data without delete 
+    $leftflag=1 ;
+  }elsif($ARGV[$i] =~ "-B"){ # -B OLD type 0101 flag 
+    $oldflag=1 ;
+  }elsif($ARGV[$i] =~ "-Z"){ # -Z depth grid option
+    $zflag=1 ;
+    $ARGV[$i] =~ s/^-Z// ;
+    @data=split(/\//,$ARGV[$i]) ;
+    $zmin=$data[0] ;
+    $zmax=$data[1] ;
+    print "$zmin $zmax\n" ;
+    #}elsif($ARGV[$i] =~ /^-sparse/){
+    #  $sopt="-Sparse" ;
+  }elsif($ARGV[$i] =~ /^-P/){
+    $ARGV[$i] =~ s/^-P// ;
+    $paramflag=1 ;
+    $PARAMFILE=$ARGV[$i]  ;
+  }  
+}; 
+
+###########################
+printf "-F%s  -T%s -S%s\/%s\n",$fnetmaxstation, $tiltmaxstation,$VRSHD,$VRSHD2 ;
+### Execute file #######
+$MTIDIR="/usr/local/MTI" ;
+$MTIOPT="/user/MTI_OPT" ;
+$UTSS="$MTIDIR/bin/used_hinet_station_select_GRANADA0103.pl" ;
+if($oldflag==0){
+    $UFSS="$MTIDIR/bin/used_hinet_station_select_GRANADA0103.pl" ;
+}else{
+    $UFSS="$MTIDIR/bin/used_fnet_station_select.pl" ;
+}
+$GHR="$MTIDIR/bin/get_hinet_rot_ang.pl" ;
+$T2SAC="$MTIDIR/bin/tilt2sac_Texas.pl" ;
+if($oldflag==0){
+    $F2SAC="$MTIDIR/bin/fnet2sac_Texas0103.pl" ;
+}else{
+    $F2SAC="$MTIDIR/bin/fnet2sac_Texas.pl" ;
+}
+#$TDMRF="$MTIDIR/bin/tdmrf_exec_fnet_tilt_GRANADA.pl" ;
+$TDMRFGRID="$MTIDIR/bin/tdmrf_exec_fnet_tilt_NAPLES_GRID.pl" ;
+$TDMRF="$MTIDIR/bin/tdmrf_exec_fnet_tilt_MALE.pl" ;
+$TDMRFIGRID="$MTIDIR/bin/tdmrf_inv_spa_grid" ;
+$TDMRFI="$MTIDIR/bin/tdmrf_inv" ;
+$TDMRFG="$MTIDIR/bin/tdmrf_gmt_out_fnet_tilt.pl" ;
+$SELSTN="$MTIDIR/bin/select_high_lvr.pl";
+$DELAZM="$MTIDIR/bin/deltazimuth" ;
+$PROJECT="/usr/local/gmt/bin/project" ;
+#### GREEN PATH #############
+$GREEN_PATH="$MTIOPT/GF1km" ;
+###### GET trg list and Make event dir ###########
+###################################################
+###################################################
+######################
+print $eventdir,"\n" ; 
+mkdir( $eventdir, 0755 ) unless ( -e $eventdir) ;
+chdir( "./$eventdir" ) ;
+print Cwd::getcwd()."\n" ;
+##################################################
+#### MAKE LOCAL TIME LABEL #######################
+$localyear=$hypodata[0] ;
+$localmonth=$hypodata[1] ;
+$localday=$hypodata[2] ;
+$localhour=$hypodata[3] ;
+$localmin=$hypodata[4] ;
+$datekey=sprintf("%02d%02d%02d",$localyear-2000, $localmonth, $localday) ;
+print "$datekey\n" ;
+##### MAKE SAC TIME ##############################
+$offset=180 ;
+$year=$hypodata[0]-1900 ;
+$month=$hypodata[1]-1 ;
+$day=$hypodata[2] ;
+$hour=$hypodata[3] ;
+$min=$hypodata[4] ;
+$uusec = &timegm(0,$min,$hour,$day,$month,$year);
+$uusec -=$offset ;  # make offset time   
+($sec,$sacmin,$sachour,$sacday,$sacmonth,$sacyear,$wday,$yday, $isdst) = gmtime($uusec);
+$sacyear += 1900; $sacmonth++;
+print "$sacyear $sacmonth $sacday $sachour $sacmin\n" ;
+open( OUT, ">event_hypoinfo.list") ;
+printf OUT "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.2lf %1.1lf %s\n",
+    $sacyear, $sacmonth, $sacday, $sachour, $sacmin, 
+    $hypodata[6], $hypodata[7], $hypodata[8],$hypodata[9],$hypodata[10] ;
+$lat=$hypodata[6] ;
+$lon=$hypodata[7] ;
+$mag=$hypodata[9] ;
+$dep=$hypodata[8] ;
+close(OUT) ;
+##################################################
+##### PRM ########################################
+print "$PARAMFILE\n" ;
+if($paramflag==1){
+  open(IN, $PARAMFILE ) || die "$PARAMFILE Not Found\n" ;
+  while(<IN>){
+    chop($_) ;
+    @data=split(/\s+/,$_) ;
+    
+    if($data[0] =~ /^GREEN_PATH/){
+      $GREEN_PATH=$data[1] ;
+    }elsif($data[0] =~ /^WINMIN/){
+      $winmin=$data[1] ;
+    }elsif($data[0] =~ /^MAGSHD/){
+      $MAGSHD=$data[1] ;
+    }elsif($data[0] =~ /^INIT_OFF/){
+      @data2=split(/\//,$data[1]) ;
+      $INIT_OFF[0]=$data2[0] ;
+      $INIT_OFF[1]=$data2[1] ;
+    }elsif($data[0] =~ /^INIT_DEP/){
+      $INIT_DEP=$data[1] ;
+    }elsif($data[0] =~ /^FINA_OFF/){
+      @data2=split(/\//,$data[1]) ;
+      $FINA_OFF[0]=$data2[0] ;
+      $FINA_OFF[1]=$data2[1] ;
+    }elsif($data[0] =~ /^FINA_DEP/){
+      $FINA_DEP=$data[1] ;
+    }elsif($data[0] eq "MAGRANC"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<5 ;$i++){
+	$MAGRANC[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "MAGPRM1"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<6 ; $i++){
+	$MAGPRM1[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "MAGPRM2"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<6 ; $i++){
+	$MAGPRM2[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "MAGPRM3"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<6 ; $i++){
+	$MAGPRM3[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "MAGPRM4"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<6 ; $i++){
+	$MAGPRM4[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "MAGPRM5"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<6 ; $i++){
+	$MAGPRM5[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "MAGPRM6"){
+      @data2=split(/\//,$data[1]) ;
+      for($i=0 ; $i<6 ; $i++){
+	$MAGPRM6[$i]=$data2[$i] ;
+      }
+    }elsif($data[0] eq "GRNLAB1"){
+      $GRNLAB1=$data[1] ;
+    }elsif($data[0] eq "GRNLAB2"){
+      $GRNLAB2=$data[1] ;
+    }elsif($data[0] eq "GRNLAB3"){
+      $GRNLAB3=$data[1] ;
+    }elsif($data[0] eq "GRNLAB4"){
+      $GRNLAB4=$data[1] ;
+    }elsif($data[0] eq "GRNLAB5"){
+      $GRNLAB5=$data[1] ;
+    }elsif($data[0] eq "GRNLAB6"){
+      $GRNLAB6=$data[1] ;
+    }elsif($data[0] eq "TIME_SPAN_SPARSE"){
+      $TIME_SPAN_SPARSE=$data[1] ;
+    }elsif($data[0] eq "TIME_SPAN"){
+      $TIME_SPAN=$data[1] ;
+    }elsif($data[0] eq "DEP_RANG_SPARSE"){
+      $DEP_RANG_SPARSE=$data[1] ;
+    }elsif($data[0] eq "DEP_RANG"){
+      $DEP_RANG=$data[1] ;
+    }elsif($data[0] eq "HOR_SPAN_SPARSE"){
+      $HOR_SPAN_SPARSE=$data[1] ;
+    }elsif($data[0] eq "HOR_SPAN"){
+      $HOR_SPAN=$data[1] ;
+    }
+  }
+  close(IN) ;
+}
+
+###################################################
+$winmin=12 ;
+$minons=$hypodata[5]+$INIT_OFF[0]+$offset ;
+$maxons=$hypodata[5]+$INIT_OFF[1]+$offset ;
+if($zflag==0){
+  $mindep=$hypodata[8]-$INIT_DEP ;
+  $maxdep=$hypodata[8]+$INIT_DEP ;
+  if($mindep<1){
+    $mindep=1 ;
+  }
+}else{
+  $mindep=$zmin ;
+  $maxdep=$zmax ;
+}
+
+####################################################
+###################################################
+## PARMS. DEPENDED ON MAGNITUDE ###################
+###################################################
+if($mag < $MAGRANC[0] ){
+  $windowsize=$MAGPRM1[0] ;
+  $mindist=$MAGPRM1[1] ;
+  $maxdist=$MAGPRM1[2] ;
+  $fillo=$MAGPRM1[3] ;
+  $filhi=$MAGPRM1[4] ;
+  $mapopt=$MAGPRM1[5] ;
+  $grend=$GREEN_PATH."\/".$GRNLAB1  ;
+}elsif( $mag >= $MAGRANC[0] && $mag <$MAGRANC[1]){
+  $windowsize=$MAGPRM2[0] ;
+  $mindist=$MAGPRM2[1] ;
+  $maxdist=$MAGPRM2[2] ;
+  $fillo=$MAGPRM2[3] ;
+  $filhi=$MAGPRM2[4] ;
+  $mapopt=$MAGPRM2[5] ;
+  $grend=$GREEN_PATH."\/".$GRNLAB2  ;
+}elsif( $mag >= $MAGRANC[1] && $mag <$MAGRANC[2]){
+  $windowsize=$MAGPRM3[0] ;
+  $mindist=$MAGPRM3[1] ;
+  $maxdist=$MAGPRM3[2] ;
+  $fillo=$MAGPRM3[3] ;
+  $filhi=$MAGPRM3[4] ;
+  $mapopt=$MAGPRM3[5] ;
+  $grend=$GREEN_PATH."\/".$GRNLAB3  ;
+}elsif( $mag >= $MAGRANC[2] && $mag <$MAGRANC[3]){
+  $windowsize=$MAGPRM4[0] ;
+  $mindist=$MAGPRM4[1] ;
+  $maxdist=$MAGPRM4[2] ;
+  $fillo=$MAGPRM4[3] ;
+  $filhi=$MAGPRM4[4] ;
+  $mapopt=$MAGPRM4[5] ;
+  $grend=$GREEN_PATH."\/".$GRNLAB4  ;
+}elsif( $mag >= $MAGRANC[3] && $mag <$MAGRANC[4]){
+  $windowsize=$MAGPRM5[0] ;
+  $mindist=$MAGPRM5[1] ;
+  $maxdist=$MAGPRM5[2] ;
+  $fillo=$MAGPRM5[3] ;
+  $filhi=$MAGPRM5[4] ;
+  $mapopt=$MAGPRM5[5] ;
+  $grend=$GREEN_PATH."\/".$GRNLAB5  ;
+}elsif( $mag >= $MAGRANC[4]){
+  $windowsize=$MAGPRM6[0] ;
+  $mindist=$MAGPRM6[1] ;
+  $maxdist=$MAGPRM6[2] ;
+  $fillo=$MAGPRM6[3] ;
+  $filhi=$MAGPRM6[4] ;
+  $mapopt=$MAGPRM6[5] ;
+  $grend=$GREEN_PATH."\/".$GRNLAB6  ;
+}
+
+if($paramflag==1){
+  print "GREEN_PATH $GREEN_PATH\n" ;
+  print "WINMIN $winmin\n" ;
+  print "MAGSHD $MAGSHD\n" ;
+  print "INIT_OFF 1: $INIT_OFF[0] 2: $INIT_OFF[1]\n" ;
+  print "INIT_DEP $INIT_DEP\n" ;
+  print "FINA_OFF 1: $FINA_OFF[0] 2: $FINA_OFF[1]\n" ;
+  print "FINA_DEP $FINA_DEP\n" ;
+  ######################
+  print "TIME_SPAN_SPARSE $TIME_SPAN_SPARSE\n" ;
+  print "TIME_SPAN $TIME_SPAN\n" ;
+  print "DEP_RANG_SPARSE $DEP_RANG_SPARSE\n" ;
+  print "DEP_RANG $DEP_RANG\n" ;
+  print "HOR_SPAN_SPARSE $HOR_SPAN_SPARSE\n" ;
+  print "HOR_SPAN $HOR_SPAN\n" ;
+  ########################
+  print "MAG  $MAGRANC[0] $MAGRANC[1] $MAGRANC[2] $MAGRANC[3] $MAGRANC[4]\n" ;
+  print "MAG1 $MAGPRM1[0] $MAGPRM1[1] $MAGPRM1[2] $MAGPRM1[3] $MAGPRM1[4] $MAGPRM1[5] $GRNLAB1\n" ; 
+  print "MAG2 $MAGPRM2[0] $MAGPRM2[1] $MAGPRM2[2] $MAGPRM2[3] $MAGPRM2[4] $MAGPRM2[5] $GRNLAB2\n" ; 
+  print "MAG3 $MAGPRM3[0] $MAGPRM3[1] $MAGPRM3[2] $MAGPRM3[3] $MAGPRM3[4] $MAGPRM3[5] $GRNLAB3\n" ; 
+  print "MAG4 $MAGPRM4[0] $MAGPRM4[1] $MAGPRM4[2] $MAGPRM4[3] $MAGPRM4[4] $MAGPRM4[5] $GRNLAB4\n" ; 
+  print "MAG5 $MAGPRM5[0] $MAGPRM5[1] $MAGPRM5[2] $MAGPRM5[3] $MAGPRM5[4] $MAGPRM5[5] $GRNLAB5\n" ; 
+  print "MAG6 $MAGPRM6[0] $MAGPRM6[1] $MAGPRM6[2] $MAGPRM6[3] $MAGPRM6[4] $MAGPRM6[5] $GRNLAB6\n" ;   
+}
+#die" BREAK !!" ;
+#sleep(5) ;
+####################################################
+## IN event dir ##################################
+### Channel Select ###############################
+if( $tiltmaxstation > 0 ){
+    if($iteflag==0){
+	print "$UTSS -d$mindist/$maxdist -s$lon/$lat -ttilt -D$datekey > channels.tbl.tilt.sel\n" ;
+	system"$UTSS -d$mindist/$maxdist -s$lon/$lat -ttilt -D$datekey > channels.tbl.tilt.sel" ;
+	#die "BREAK !!!!" ;
+	#print "$UTSS -d$mindist/$maxdist -s$lon/$lat/$dep -ttilt -D$datekey > channels.tbl.tilt.sel\n" ;
+	#system"$UTSS -d$mindist/$maxdist -s$lon/$lat/$dep -ttilt -D$datekey > channels.tbl.tilt.sel" ;
+    }
+    ##################
+    #### station CODE ***H ---> N.***H
+    open(IN,"channels.tbl.tilt.sel") ;
+    open(OUT,">channels.tbl.tilt.sel.mod") ;
+    while(<IN>){
+	chop($_) ;
+	@chline=split(/\s+/,$_) ;
+	if($chline[3] !~ /^N\./){
+	    $newchcd=sprintf("N.%s",$chline[3]) ;
+	}else{
+	    $newchcd=$chline[3] ;
+	}
+	$chline[3]=$newchcd ;
+	for($i=0 ; $i<=$#chline ; $i++){
+	    print OUT "$chline[$i] " ;
+	}
+	print OUT "\n" ;
+    }   
+    close(IN) ;
+    close(OUT) ;
+    system"mv channels.tbl.tilt.sel.mod channels.tbl.tilt.sel" ;
+    ##################
+}
+system"cp channels_dist_azim.tmp channels_dist_azim_tilt.tmp" ;
+
+if( $fnetmaxstation > 0 ){
+    if($iteflag==0){
+	if($oldflag==0){
+	    print "$UFSS -d$mindist/$maxdist -s$lon/$lat -tsts -D$datekey  > channels.tbl.fnet.sel\n" ;
+	    system"$UFSS -d$mindist/$maxdist -s$lon/$lat -tsts -D$datekey  > channels.tbl.fnet.sel" ;
+	}else{
+	    print "$UFSS -d$mindist/$maxdist -D > channels.tbl.fnet.sel\n" ;
+	    system"$UFSS -d$mindist/$maxdist -D > channels.tbl.fnet.sel" ;
+	}
+    }
+}
+#die "Break!!!" ;
+## Make SAC FILE ################################
+if($iteflag==0){
+    if( $tiltmaxstation > 0 ){
+	system"$T2SAC $sacyear/$sacmonth/$sacday,$sachour:$sacmin $winmin d" ;
+    }
+    if( $fnetmaxstation > 0 ){
+	system"$F2SAC $sacyear/$sacmonth/$sacday,$sachour:$sacmin $winmin d" ;
+    }
+#die "Break!!!" ;
+######## REMOVE DATA ###################
+    system"rm *.cnt conti_win_data.tmp" ;
+    system"rm -r sactmp";
+}
+#######################################
+## SELECT GOOD S/N stations ###########
+######## Read station list ############
+printf "SEARCH F-NET START \n" ;
+### For F-net stations ###################
+$maxstations=0 ;
+if( $fnetmaxstation > 0 ){
+  if($eventnum>0){
+    splice(@stations,0,$#stations+1) ;
+    splice(@selstations,0,$#selstations+1) ;
+    splice(@locmag,0,$#locmag+1) ;
+  }
+  open(IN, "used_stream_BH") ;
+  while(<IN>){
+    chop($_) ;
+    push(@stations, $_) ;
+  }
+  close(IN) ; 
+  ################
+  if($iteflag==0){
+    open(OUT, ">stcd_maxvr_fnet") ;
+  }
+  ################
+  for($i=0 ; $i<=$#stations ; $i++){
+    if($iteflag==0){
+      $cmdline=sprintf( "-j -s%s -tBH -f%s/%s -g%s -o0 -l%d-%d-2 -d%d-%d -w%d %s",
+			$stations[$i],$fillo,$filhi,$grend,$minons,$maxons,
+			$mindep,$maxdep,$windowsize,$sopt ) ;
+      print "$TDMRFGRID $cmdline" ;
+      system"$TDMRFGRID $cmdline > /dev/null" ;
+      #die "BREAK!!!" ;
+      #open( IN, "itr_res_inv.out") ;
+      open(IN, "grid_tdmrf_inv.out") ;
+      $maxvr=0 ;
+      while(<IN>){
+	chop($_) ;
+	@data=split(/\s+/,$_) ;
+	if( $maxvr < $data[10]){
+	  $maxvr=$data[10] ;
+	  $locmag=$data[9] ;
+	}
+      }
+      print "Mw $locmag M $hypodata[9]\n" ;
+      print "$stations[$i] $maxvr\n" ;
+      close(IN) ;
+    }else{
+      open(IN_in,"stcd_maxvr_fnet") ;
+      while(<IN_in>){
+	if($_ =~ /$stations[$i]/){
+	  chop($_) ;
+	  @data=split(/\s+/,$_) ;
+	  $maxvr=$data[1] ;
+	  $locmag=$data[2] ;
+	  print "Mw $locmag\n" ;
+	  print "$stations[$i] $maxvr\n" ;
+	  last ;
+	}
+      }
+      close(IN_in) ;
+    }
+    #####
+    if($iteflag==0){
+      print OUT "$stations[$i] $maxvr $locmag\n" ;
+    }
+    #####
+    if($maxvr>$VRSHD){
+      ######
+      # unused station code #
+      if($stations[$i] !~ /JIZ/){
+	######
+	push( @selstations,$stations[$i]) ;
+	$varred{$stations[$i]}=$maxvr ;
+	push(@locmags, $locmag) ;
+      }
+    }
+  }
+  ################
+  if($iteflag==0){
+    close(OUT) ;
+  }
+  ################
+  ############ sort used station ######################################
+  if( $#selstations+ 1 > $fnetmaxstation ){
+    open(IN, "channels.tbl.fnet.sel") ;
+    while(<IN>){
+      chop($_) ;
+      @data=split(/\s+/,$_) ;
+      for($i=0 ; $i<=$#selstations ; $i++){
+	$stcd=$selstations[$i] ;
+	if($data[3] =~ /$stcd/){
+	  open( CMD, "$DELAZM -e$lon/$lat -s$data[14]/$data[13] |") ;
+	  $line=<CMD> ;
+	  close(CMD) ;
+	  chop($line) ;
+	  @data2=split(/\s+/,$line) ;
+	  $statazimuth{$stcd}=$data2[1] ;
+	  if($statazimuth{$stcd}==360){
+	    $statazimuth{$stcd}=0 ;
+	  }
+	}
+      }
+    }
+    close(IN) ;
+    @cand_selstations=@selstations ;
+    splice(@selstations, 0, $#selstations+1) ;
+  phase_sel_fnet_station:
+    for($j=0 ; $j<6 ; $j++){
+      print "AREA $j\n" ;
+      splice(@azm_area_stcd, 0, $#azm_area_stcd+1) ;
+      for($i=0 ; $i<=$#cand_selstations ; $i++){
+	$stcd=$cand_selstations[$i] ;
+	if($statazimuth{$stcd}>=0+$j*60 && $statazimuth{$stcd}<60+$j*60){
+	  push( @azm_area_stcd, $stcd ) ;
+	}
+      }
+      
+      @sort_selstations = sort{ $varred{$b} <=> $varred{$a}} @azm_area_stcd ;
+      if($#sort_selstations>=0){
+	push(@selstations, $sort_selstations[0]) ;
+	for($i=0 ; $i<=$#cand_selstations ; $i++){
+	  if($cand_selstations[$i] eq $sort_selstations[0]){ 
+	    #print "$cand_selstations[$i] eq $sort_selstations[0] removed\n" ;
+	    splice(@cand_selstations,$i, 1) ;
+	    last ;
+	  }
+	}
+      }	
+    }
+    
+    if($#selstations+1 < $fnetmaxstation){
+      $fusoku=$fnetmaxstation-$#selstations-1 ;
+      print "$#selstations+1 < $fnetmaxstation Fusoku $fusoku\n" ;
+      if( $fusoku >=6){
+	goto phase_sel_fnet_station ;
+      }else{
+	@sort_selstations = sort{ $varred{$b} <=> $varred{$a}} @cand_selstations ;
+	
+	print "ELSE\n" ; 
+	for($i=0 ; $i<$fusoku ; $i++){
+	  print "$sort_selstations[$i]\n" ;
+	  push(@selstations, $sort_selstations[$i]) ;
+	}
+      }
+    }
+    
+    for($i=0; $i<=$#selstations; $i++){
+      $stcd=$selstations[$i] ;
+      print "Accept $selstations[$i] $varred{$stcd}\n" ;
+    }
+    for($i=0 ; $i<=$#cand_selstations; $i++){
+      $stcd=$cand_selstations[$i] ;
+      print "Reject $cand_selstations[$i] $varred{$stcd}\n" ;
+    }
+    #####################################################################
+    $maxstations =$fnetmaxstation ;
+  }else{
+    $maxstations=$#selstations+1 ;
+  }
+  
+  @sort_selstations = sort{ $varred{$b} <=> $varred{$a}} @selstations ;
+  for($i=0 ; $i<$maxstations ; $i++){
+    print "SEL f-net STATION $sort_selstations[$i] $varred{$sort_selstations[$i]}\n" ;
+    if($i==0){
+      $instations=sprintf( "%s", $sort_selstations[$i]) ;
+      $instreams="BH" ;
+    }
+    else{
+      $instations=sprintf( "%s,%s", $instations,$sort_selstations[$i]) ;
+      $instreams=sprintf( "%s,BH",$instreams ) ;
+    }
+  }
+  print $instations,"\n" ;
+  print $instreams,"\n" ;
+  ########################################################################
+}
+
+if( $maxstations!=0){
+  $summag=0 ;
+  foreach $lm (@locmags){
+    $summag+=$lm ;
+  }
+  $fnetmag=$summag/($#locmags+1) ;
+}else{
+  $fnetmag=$mag ;
+  ##### <---- Magnitude shlesold changed ##########3
+  $MAGSHD=1.0 ;
+}
+
+#die "BREAK in TDMRF_inv_CMT_NAPLES_fixedepicenter.pl" ;
+########################################
+$maxstations2=0 ;
+if($tiltmaxstation > 0 ){
+  if($eventnum>0){
+    splice(@stations2,0,$#stations2+1) ;
+    splice(@selstations2,0,$#selstations2+1) ;
+  }
+  
+  open(IN, "used_stream_TL") ;
+  while(<IN>){
+    chop($_) ;
+    push(@stations2, $_) ;
+  }
+  close(IN) ;
+  
+  ################
+  if($iteflag==0){
+    open(OUT, ">stcd_maxvr_tilt") ;
+  }
+  ################
+  for($i=0,$badstations=0 ; $i<=$#stations2 ; $i++){
+    if($iteflag==0){
+      #### ROTATION ANGLE CHECK ##############################
+      ### if rotang == 360, not Used #########################
+      ### rotang == 360 means its station is not on list #####
+      print "$GHR $stations2[$i] $localyear/$localmonth/$localday,$localhour:$localmin|\n" ;
+      open( CMD, "$GHR $stations2[$i] $localyear/$localmonth/$localday,$localhour:$localmin|") ;
+      $rotang=<CMD> ;
+      chop($rotang) ;
+      close(CMD) ;
+      print "CHECK ROATATION ANGLE $stations2[$i] $rotang\n" ;
+      ### TEST ####
+      #die  ;
+      #############
+      #######################################################
+      if($rotang !=360){
+	$cmdline=sprintf( "-j -s%s -tTL -f%s/%s -g%s -o0 -l%d-%d-2 -d%d-%d -w%d %s",
+			  $stations2[$i],$fillo,$filhi,$grend,$minons,$maxons,
+			  $mindep,$maxdep,$windowsize,$sopt ) ;
+	#print "$cmdline\n" ;
+	#print $cmdline,"\n" ;
+	system"$TDMRFGRID $cmdline > /dev/null" ;
+	#system"$TDMRF $cmdline" ;
+	#die "Break !!!!!!!!!!!!!!!!!!!" ;
+	#open( IN, "itr_res_inv.out") ;
+	open(IN, "grid_tdmrf_inv.out") ;
+	$maxvr=0 ;
+	while(<IN>){
+	  chop($_) ;
+	  @data=split(/\s+/,$_) ;
+	  if( $maxvr < $data[10]){
+	    $maxvr=$data[10] ;
+	    $locmag=$data[9] ;
+	  }
+	}
+	printf "Local %1.2lf Global %1.2lf\n",$locmag,$fnetmag ;
+	print "$stations2[$i] $maxvr\n" ;
+	close(IN) ;
+      }
+    }else{
+      open(IN_in,"stcd_maxvr_tilt") ;
+      while(<IN_in>){
+	if($_ =~ /$stations2[$i]/){
+	  chop($_) ;
+	  @data=split(/\s+/,$_) ;
+	  $maxvr=$data[1] ;
+	  $locmag=$data[2] ;
+	  print "Mw $locmag\n" ;
+	  print "$stations2[$i] $maxvr\n" ;
+	  last ;
+	}
+      }
+      close(IN_in) ;
+    }
+    #####
+    if($iteflag==0){
+      print OUT "$stations2[$i] $maxvr $locmag\n" ;
+    }
+    #####
+    
+    
+    if($maxvr>$VRSHD && abs( $locmag - $fnetmag ) <= $MAGSHD ){
+      push( @selstations2,$stations2[$i]) ;
+      $varred{$stations2[$i]}=$maxvr ;
+    }
+    
+    ######### BAD Station Select ############
+    #if($locmag > $fnetmag-0.5 && $locmag < $fnetmag+0.5 && $maxvr < 20){
+    #    $badstations++ ;
+    #}
+    #last if( $badstations > 10 ) ;
+    #die "Break !!!!!!!!!!!!!!!!!!!!!!!!!" ;
+  }
+  
+  ################
+  if($iteflag==0){
+    close(OUT) ;
+  }
+  ################
+  ##########################################################################
+  if( $#selstations2 + 1 > $tiltmaxstation ){
+    open(IN, "channels.tbl.tilt.sel") ;
+    while(<IN>){
+      chop($_) ;
+      @data=split(/\s+/,$_) ;
+      for($i=0 ; $i<=$#selstations2 ; $i++){
+	$stcd=$selstations2[$i] ;
+	if($data[3] =~ /$stcd/){
+	  open( CMD, "$DELAZM -e$lon/$lat -s$data[14]/$data[13] |") ;
+	  $line=<CMD> ;
+	  close(CMD) ;
+	  chop($line) ;
+	  @data2=split(/\s+/,$line) ;
+	  $statazimuth{$stcd}=$data2[1] ;
+	  if($statazimuth{$stcd}==360){
+	    $statazimuth{$stcd}=0 ;
+	  }
+	}
+      }
+    }
+    close(IN) ;
+    @cand_selstations=@selstations2 ;
+    splice(@selstations2, 0, $#selstations2+1) ;
+  phase_sel_tilt_station:
+    ####################################
+    ### 360 degrees are dvided by 36 ###
+    ####################################
+    $azimuthdiv=36 ;
+    $ddazimuth=10 ;
+    ####################################
+    for($j=0 ; $j<$azimuthdiv ; $j++){
+      print "AREA $j\n" ;
+      splice(@azm_area_stcd, 0, $#azm_area_stcd+1) ;
+      for($i=0 ; $i<=$#cand_selstations ; $i++){
+	$stcd=$cand_selstations[$i] ;
+	###############
+	if($statazimuth{$stcd}>=$j*$ddazimuth && $statazimuth{$stcd}<($j+1)*$ddazimuth){
+	  push( @azm_area_stcd, $stcd ) ;
+	}
+      }
+      
+      @sort_selstations2 = sort{ $varred{$b} <=> $varred{$a}} @azm_area_stcd ;
+      if($#sort_selstations2>=0){
+	push(@selstations2, $sort_selstations2[0]) ;
+	for($i=0 ; $i<=$#cand_selstations ; $i++){
+	  if($cand_selstations[$i] eq $sort_selstations2[0]){ 
+	    #print "$cand_selstations[$i] eq $sort_selstations2[0] removed\n" ;
+	    splice(@cand_selstations,$i, 1) ;
+	    last ;
+	  }
+	}
+      }	
+    }
+    
+    if($#selstations2+1 < $tiltmaxstation){
+      $fusoku=$tiltmaxstation-$#selstations2-1 ;
+      print "$#selstations2+1 < $tiltmaxstation Fusoku $fusoku\n" ;
+      ##########################
+      if( $fusoku >=$azimuthdiv){
+	goto phase_sel_tilt_station ;
+      }else{
+	@sort_selstations2 = sort{ $varred{$b} <=> $varred{$a}} @cand_selstations ;
+	
+	print "ELSE\n" ; 
+	for($i=0 ; $i<$fusoku ; $i++){
+	  print "$sort_selstations2[$i]\n" ;
+	  push(@selstations2, $sort_selstations2[$i]) ;
+	}
+      }
+    }
+    
+    for($i=0; $i<=$#selstations2; $i++){
+      $stcd=$selstations2[$i] ;
+      print "Accept $selstations2[$i] $varred{$stcd}\n" ;
+    }
+    for($i=0 ; $i<=$#cand_selstations; $i++){
+      $stcd=$cand_selstations[$i] ;
+      print "Reject $cand_selstations[$i] $varred{$stcd}\n" ;
+    }
+    ###############################################################
+    $maxstations2=$tiltmaxstation ;
+  }else{
+    $maxstations2=$#selstations2+1 ;
+  }
+  @sort_selstations2 = sort{ $varred{$b} <=> $varred{$a}} @selstations2 ;
+  for($i=0 ; $i<$maxstations2 ; $i++){
+    print "SEL Hi-net(TILT) STATION $sort_selstations2[$i] $varred{$sort_selstations2[$i]}\n" ;
+    if($i==0){
+      $instations2=sprintf( "%s", $sort_selstations2[$i]) ;
+      $instreams2="TL" ;
+    }
+    else{
+      $instations2=sprintf( "%s,%s", $instations2,$sort_selstations2[$i]) ;
+      $instreams2=sprintf( "%s,TL",$instreams2 ) ;
+    }
+  }
+  print $instations2,"\n" ;
+  print $instreams2,"\n" ;
+}
+### FINAL TRY ############
+if($maxstations > 0 && $maxstations2 > 0){
+  $final_instations=sprintf( "%s,%s",$instations,$instations2 ) ;
+  $final_instreams=sprintf( "%s,%s", $instreams, $instreams2) ;
+}elsif($maxstations > 0 && $maxstations2==0 ){
+  $final_instations=$instations ;
+  $final_instreams=$instreams ;
+}elsif($maxstations == 0 && $maxstations2 > 0 ){
+  $final_instations=$instations2 ;
+  $final_instreams=$instreams2 ;
+}else{
+  goto phase1 ;
+}
+print "FINAL SELECT STATIONS AND STREAMS\n" ;
+print "$final_instations\n" ;
+print "$final_instreams\n" ;
+if($zflag==0){
+  $mindep=$hypodata[8]-$FINA_DEP ;
+  $maxdep=$hypodata[8]+$FINA_DEP ;
+  if($mindep<1){
+    $mindep=1 ;
+  }
+}else{
+  $mindep=$zmin ;
+  $maxdep=$zmax ;
+}
+
+$minons=$hypodata[5]+$FINA_OFF[0]+$offset ;
+$maxons=$hypodata[5]+$FINA_OFF[1]+$offset ;
+
+open( OUT,"> final_exe.log") ;
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $final_instations,$final_instreams,$fillo,$filhi,
+		  $grend,$minons,$maxons,$mindep,$maxdep,$windowsize,$sopt ) ;
+print $cmdline,"\n" ;
+printf OUT "%s %s\n",$TDMRFGRID, $cmdline ;
+
+system"$TDMRFGRID $cmdline 1> /dev/null 2>&1" ;
+#open( IN, "itr_res_inv.out") ;
+open(IN, "grid_tdmrf_inv.out") ;
+$maxvr=0 ;
+while(<IN>){
+  chop($_) ;
+  @data=split(/\s+/,$_) ;
+  if( $maxvr < $data[10]){
+    $maxvr=$data[10] ;
+    $ctime=$data[5] ;
+    $cdep=$data[8] ;
+  }
+}
+close(IN) ;
+
+print "MAXVR $maxvr CTIME $ctime CDEP $cdep\n" ;
+#die "BREAK!!!" ;
+
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $final_instations,$final_instreams,$fillo,$filhi,
+		  $grend,$ctime,$ctime,$cdep,$cdep,$windowsize,$sopt ) ;
+print $cmdline,"\n" ;
+printf OUT "%s %s\n",$TDMRF, $cmdline ;
+system"$TDMRF $cmdline 1> /dev/null 2>&1" ;
+
+$tdmrfinf=sprintf("tdmrf_inv.in_%04d_%03d",$ctime,$cdep) ; 
+##system"$TDMRFI $tdmrfinf > /dev/null" ;
+system"$TDMRFG $tdmrfinf $mapopt > /dev/null" ;
+print OUT "$TDMRFI $tdmrfinf\n" ;
+print OUT "$TDMRFG $tdmrfinf\n" ;
+close(OUT) ;
+system "cp plot.ps plot_res1.ps" ;
+system "cp event_hypoinfo.list event_hypoinfo_org.list" ;
+system "cp final_exe.log final_exe1.log" ;
+
+#die"BREAK!!!!" ;
+#########################################################
+### SELECT STATIONS FOR CMT ##############################
+open( CMD, "$SELSTN $VRSHD2 |") ;
+$select_high_stations=<CMD> ;
+$select_high_streams=<CMD> ;
+close(CMD) ;
+chop($select_high_stations) ;
+chop($select_high_streams) ;
+if($select_high_stations==-1){
+    goto phase1 ;
+} 
+
+open( OUT,"> final_exe2.log") ;
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+		  $grend,$minons,$maxons,$mindep,$maxdep,$windowsize, $sopt ) ;
+print $cmdline,"\n" ;
+printf OUT "%s %s\n",$TDMRFGRID, $cmdline ;
+
+system"$TDMRFGRID $cmdline 1> /dev/null 2>&1" ;
+#open( IN, "itr_res_inv.out") ;
+open(IN, "grid_tdmrf_inv.out") ;
+$maxvr=0 ;
+while(<IN>){
+  chop($_) ;
+  @data=split(/\s+/,$_) ;
+  if( $maxvr < $data[10]){
+    $maxvr=$data[10] ;
+    $ctime=$data[5] ;
+    $cdep=$data[8] ;
+  }
+}
+close(IN) ;
+
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+		  $grend,$ctime,$ctime,$mindep,$maxdep,$windowsize,$sopt ) ;
+print $cmdline,"\n" ;
+printf OUT "%s %s\n",$TDMRF, $cmdline ;
+system"$TDMRF $cmdline 1> /dev/null 2>&1" ;
+
+$tdmrfinf=sprintf("tdmrf_inv.in_%04d_%03d",$ctime,$cdep) ; 
+system"$TDMRFI $tdmrfinf > /dev/null" ;
+system"$TDMRFG $tdmrfinf $mapopt > /dev/null" ;
+print OUT "$TDMRFI $tdmrfinf\n" ;
+print OUT "$TDMRFG $tdmrfinf\n" ;
+close(OUT) ;
+system "cp plot.ps plot_fixedepi.ps" ;
+
+#die "BREAK befor CMT analy\n" ;
+#####################################################################
+########################################################
+##########Centroid Moment tensor routine ###############
+########################################################
+## preparation for paramter ###
+$bestvr=$maxvr ;
+$cmttime=$ctime ;
+$cmtdepth=$cdep  ;
+$cmtlat=$lat ;
+$cmtlon=$lon ;
+###################
+### set PRAM #######
+$retrynum=50 ;
+$first_try_flag=0 ;
+$sparse_flag=0 ;
+#############################################################
+ phase_retry:
+    if($first_try_flag==1){
+	$cmtlat=$newlat ;
+	$cmtlon=$newlon ;
+	$cmtdepth=$newdepth ;
+	$cmttime=$newtime ;
+    }
+
+
+if($sparse_flag==0){
+    $timespan=$TIME_SPAN_SPARSE ;
+}else{
+    $timespan=$TIME_SPAN ;
+}
+$minons=$cmttime-$timespan ;
+$maxons=$cmttime+$timespan ;
+
+##################################
+if($sparse_flag==0){
+  $depspan=$DEP_RANG_SPARSE ;
+  $sopt="-Sparse" ;
+}else{
+  $depspan=$DEP_RANG ;
+}
+
+$mindep=$cmtdepth-$depspan ;
+if($mindep<0){
+  $mindep=0 ;
+}
+$maxdep=$cmtdepth+$depspan ;
+
+#print "############ DEPTH $depspan\n" ;
+##########################################################################
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+		  $grend,$minons,$maxons,$mindep,$maxdep,$windowsize,$sopt) ;
+print $cmdline,"\n" ;
+### SARCH CMT #########
+#5 2 6
+#1   3
+#4 0 7
+##########################################
+if($sparse_flag==0){ 
+  $span=$HOR_SPAN_SPARSE ;
+}else{
+  $span=$HOR_SPAN ;
+}
+open(CMD, "$PROJECT -C$cmtlon\/$cmtlat -A0 -G$span -L0\/$span -Q |") ;
+print "$PROJECT -C$cmtlon\/$cmtlat -A0 -G$span -L0\/$span -Q\n" ;
+$outproj=<CMD> ;
+$outproj=<CMD> ;
+chop($outproj) ;
+close(CMD) ;
+@data=split(/\s+/,$outproj) ;
+$dhypolat=$data[1]-$cmtlat ;
+
+open(CMD, "$PROJECT -C$cmtlon\/$cmtlat -A90 -G$span -L0\/$span -Q |") ;
+print "$PROJECT -C$cmtlon\/$cmtlat -A90 -G$span -L0\/$span -Q\n" ;
+$outproj=<CMD> ;
+$outproj=<CMD> ;
+chop($outproj) ;
+close(CMD) ;
+@data=split(/\s+/,$outproj) ;
+$dhypolon=$data[0]-$cmtlon ;
+############################################
+#####################################
+for( $i=0,$goflag=0 ; $i<8 ; $i++){
+  
+  ### make event_hypoinfo.list#######
+  if($first_try_flag==1){
+    if($befor_move_dire_num==0){
+      if($i==1){
+	$i=4 ;
+      }elsif($i==5){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==1){
+      if($i==0){
+	$i=1 ;
+      }elsif($i==2){
+	$i=4 ;
+      }
+    }elsif($befor_move_dire_num==2){
+      if($i==0){
+	$i=2 ;
+      }elsif($i==3){
+	$i=5 ;
+      }
+    }elsif($befor_move_dire_num==3){
+      if($i==0){
+	$i=3 ;
+      }elsif($i==4){
+	$i=6 ;
+      }
+    }elsif($befor_move_dire_num==4){
+      if($i==2){
+	$i=4 ;
+      }elsif($i==6){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==5){
+      if($i==0){
+	$i=1 ;
+      }elsif($i==3){
+	$i=4 ;
+      }
+    }elsif($befor_move_dire_num==6){
+      if($i==0){
+	$i=2 ;
+      }elsif($i==4){
+	$i=5 ;
+      }
+    }elsif($befor_move_dire_num==7){
+      if($i==1){
+	$i=3 ;
+      }elsif($i==5){
+	$i=6 ;
+      }
+    }  
+  }
+  if($i==0){
+    $nlon=$cmtlon  ;
+    $nlat=$cmtlat-$dhypolat ;
+  }elsif($i==1){
+    $nlon=$cmtlon-$dhypolon ;
+    $nlat=$cmtlat ;
+  }elsif($i==2){
+    $nlon=$cmtlon  ;
+    $nlat=$cmtlat+$dhypolat ;
+  }elsif($i==3){
+    $nlon=$cmtlon+$dhypolon ;
+    $nlat=$cmtlat ;
+  }elsif($i==4){
+    $nlon=$cmtlon-$dhypolon ;
+    $nlat=$cmtlat-$dhypolat ;
+  }elsif($i==5){
+    $nlon=$cmtlon-$dhypolon ;
+    $nlat=$cmtlat+$dhypolat ;
+  }elsif($i==6){
+    $nlon=$cmtlon+$dhypolon ;
+    $nlat=$cmtlat+$dhypolat ;
+  }elsif($i==7){
+    $nlon=$cmtlon+$dhypolon ;
+    $nlat=$cmtlat-$dhypolat ;
+  }
+  
+  open( OUT, ">event_hypoinfo.list") ;
+  printf "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s ",
+    $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$nlat,$nlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+  printf OUT "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s\n",
+    $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$nlat,$nlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+  close(OUT) ;
+  #############################
+  system"$TDMRFGRID $cmdline 1> /dev/null 2>&1" ;
+  #open( IN, "itr_res_inv.out") ;
+  open(IN, "grid_tdmrf_inv.out") ;
+  $inmax=0 ;
+  while(<IN>){
+    chop($_) ;
+    @data=split(/\s+/,$_) ;
+    if( $data[10] > $bestvr){
+      $bestvr=$data[10] ;
+      $newlat=$nlat ;
+      $newlon=$nlon ;
+      $newdepth=$data[8] ;
+      $newtime=$data[5] ;
+      $goflag=1 ;
+      $move_dire_num=$i ;
+    }if($data[10] > $inmax ){
+      $inmax=$data[10] ;
+    }
+  }
+  close(IN) ;
+  printf "VR %1.3lf\/%1.3lf grid_num = %d\n",$inmax, $bestvr,$i ;
+  #############################
+  if($first_try_flag==1){
+    if($befor_move_dire_num==1){
+      if($i==5){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==2){
+      if($i==6){
+	$i=7 ;
+      }
+    }elsif($befor_move_dire_num==5){
+      if($i==6){
+	$i=7 ;
+      }
+    }  
+  }
+}
+  
+if($goflag == 1 && $retrynum >=0 ){
+  $retrynum-- ;
+  print "GOTO RETRY PHASE $retrynum $bestvr $move_dire_num\n" ;
+  $first_try_flag=1 ;
+  $befor_move_dire_num=$move_dire_num ;
+  goto phase_retry;
+}
+if($sparse_flag==0){
+  $sopt="" ;
+  $sparse_flag=1 ;
+  $retrynum=10 ;
+  $befor_move_dire_num=8 ;
+  goto phase_retry;
+}
+  
+#die "BREAK!! befor FINAL\n" ;
+### FOR FINAL RESULT ###################
+open( OUT, ">event_hypoinfo.list") ;
+printf "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s\n",
+  $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$cmtlat,$cmtlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+printf OUT  "%04d %02d %02d %02d %02d 00 %1.4lf %1.4lf %1.0lf %1.1lf %s\n",
+  $sacyear,$sacmonth,$sacday,$sachour,$sacmin,$cmtlat,$cmtlon,$cmtdepth,$fnetmag,$hypodata[10] ;
+close(OUT) ;
+$mindep=$cmtdepth-20 ;
+if($mindep<0){
+  $mindep=0 ;
+}
+$maxdep=$cmtdepth+20 ;
+#$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d- -d%d-%d -w%d %s",
+#		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+#		  $grend,$cmttime,$mindep,$maxdep,$windowsize,$sopt ) ;
+#
+open( OUT,"> final_exe3.log") ;
+#printf OUT "%s %s\n",$TDMRFGRID, $cmdline ;
+#printf "%s %s\n",$TDMRFGRID, $cmdline ;
+#die "BEFORE first final check\n"; 
+#system"$TDMRFGRID $cmdline > /dev/null" ;
+##open( IN, "itr_res_inv.out") ;
+#open(IN, "grid_tdmrf_inv.out") ;
+#$maxvr=0 ;
+#while(<IN>){
+#  chop($_) ;
+#  @data=split(/\s+/,$_) ;
+#  if( $maxvr < $data[7]){
+#    $maxvr=$data[10] ;
+#    $ctime=$data[5] ;
+#    $cdep=$data[8] ;
+#  }
+#}
+#close(IN) ;
+#die "END first final check!!\n" ;
+
+$cmdline=sprintf( "-j -s%s -t%s -f%s/%s -g%s -o0 -l%d-%d-1 -d%d-%d -w%d %s",
+		  $select_high_stations,$select_high_streams,$fillo,$filhi,
+		  $grend,$cmttime,$cmttime,$mindep,$maxdep,$windowsize,$sopt ) ;
+print $cmdline,"\n" ;
+printf OUT "%s %s\n",$TDMRF, $cmdline ;
+#die "BREAK!!!\n" ;
+system"$TDMRF $cmdline 1> /dev/null 2>&1" ;
+
+$tdmrfinf=sprintf("tdmrf_inv.in_%04d_%03d",$cmttime,$cmtdepth) ; 
+system"$TDMRFI $tdmrfinf > /dev/null" ;
+system"$TDMRFG $tdmrfinf $mapopt > /dev/null" ;
+print OUT "$TDMRFI $tdmrfinf\n" ;
+print OUT "$TDMRFG $tdmrfinf\n" ;
+close(OUT) ;
+system "cp plot.ps plot_cmt.ps" ;
+system "cp event_hypoinfo.list event_hypoinfo_precmt.list" ;
+#####################################################################
+######################################################################
+phase1:
+if($leftflag==0){
+  system "rm [A-Z]*" ;
+  system "rm tdmrf_inv.*" ;
+  system "rm tmp*" ;
+  system "rm *.tmp" ;
+  system "rm *.TLE *.TLN *.BHE *.BHN *.BHZ" ;
+}
+######## 
+#### CHANGE DIR $WORKHOME ###
+chdir("../") ;
+#############################
+
+
+
+
+  
+  

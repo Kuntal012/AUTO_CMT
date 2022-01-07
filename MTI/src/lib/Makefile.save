@@ -1,0 +1,24 @@
+# CFLAGS=-O
+CFLAGS=-O -DENVIRONMENT
+
+SOURCE = getpar.c getarg.c
+CFILES = getpar.o getarg.o
+FFILES = fgetpar.o fgetarg.o
+
+get:	$(CFILES)
+	-rm get
+	ar r get $(CFILES)
+	ranlib get
+	ar t get
+
+install:
+	mv get libget.a
+
+cleanup:
+	rm get $(CFILES)
+list:
+	imprint -2 $(SOURCE) Makefile
+
+doc:
+	itroff -man getpar.3
+	itroff -man getarg.3

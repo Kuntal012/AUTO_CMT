@@ -1,0 +1,429 @@
+#!/bin/sh
+# This is a shell archive (produced by GNU sharutils 4.2).
+# To extract the files from this archive, save it to some FILE, remove
+# everything before the `!/bin/sh' line above, then type `sh FILE'.
+#
+# Made on 2000-02-28 18:43 GMT by <george at xterm1 dot gly dot bris dot ac dot uk>.
+# Source directory was `/usr/local/src/sac/utils'.
+#
+# Existing files will *not* be overwritten unless `-c' is specified.
+#
+# This shar contains:
+# length mode       name
+# ------ ---------- ------------------------------------------
+#   5128 -rw------- sac.h
+#   4860 -rw------- sactosac.c
+#
+save_IFS="${IFS}"
+IFS="${IFS}:"
+gettext_dir=FAILED
+locale_dir=FAILED
+first_param="$1"
+for dir in $PATH
+do
+  if test "$gettext_dir" = FAILED && test -f $dir/gettext \
+     && ($dir/gettext --version >/dev/null 2>&1)
+  then
+    set `$dir/gettext --version 2>&1`
+    if test "$3" = GNU
+    then
+      gettext_dir=$dir
+    fi
+  fi
+  if test "$locale_dir" = FAILED && test -f $dir/shar \
+     && ($dir/shar --print-text-domain-dir >/dev/null 2>&1)
+  then
+    locale_dir=`$dir/shar --print-text-domain-dir`
+  fi
+done
+IFS="$save_IFS"
+if test "$locale_dir" = FAILED || test "$gettext_dir" = FAILED
+then
+  echo=echo
+else
+  TEXTDOMAINDIR=$locale_dir
+  export TEXTDOMAINDIR
+  TEXTDOMAIN=sharutils
+  export TEXTDOMAIN
+  echo="$gettext_dir/gettext -s"
+fi
+touch -am 1231235999 $$.touch >/dev/null 2>&1
+if test ! -f 1231235999 && test -f $$.touch; then
+  shar_touch=touch
+else
+  shar_touch=:
+  echo
+  $echo 'WARNING: not restoring timestamps.  Consider getting and'
+  $echo "installing GNU \`touch', distributed in GNU File Utilities..."
+  echo
+fi
+rm -f 1231235999 $$.touch
+#
+if mkdir _sh00886; then
+  $echo 'x -' 'creating lock directory'
+else
+  $echo 'failed to create lock directory'
+  exit 1
+fi
+# ============= sac.h ==============
+if test -f 'sac.h' && test "$first_param" != -c; then
+  $echo 'x -' SKIPPING 'sac.h' '(file already exists)'
+else
+  $echo 'x -' extracting 'sac.h' '(text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'sac.h' &&
+struct sac_header {                    
+float	delta,     depmin,    depmax,    scale,     odelta;    
+float	b,         e,         o,         a,         internal1; 
+float	t0,        t1,        t2,        t3,        t4;        
+float	t5,        t6,        t7,        t8,        t9;        
+float	f,         resp0,     resp1,     resp2,     resp3;     
+float	resp4,     resp5,     resp6,     resp7,     resp8;     
+float	resp9,     stla,      stlo,      stel,      stdp;      
+float	evla,      evlo,      evel,      evdp,      unused1;   
+float	user0,     user1,     user2,     user3,     user4;     
+float	user5,     user6,     user7,     user8,     user9;     
+float	dist,      az,        baz,       gcarc,     internal2; 
+float	internal3, depmen,    cmpaz,     cmpinc,    unused2;   
+float	unused3,   unused4,   unused5,   unused6,   unused7;   
+float	unused8,   unused9,   unused10,  unused11,  unused12;  
+long	nzyear,    nzjday,    nzhour,    nzmin,     nzsec;     
+long	nzmsec,    internal4, internal5, internal6, npts;      
+long	internal7, internal8, unused13,  unused14,  unused15;  
+long	iftype,    idep,      iztype,    unused16,  iinst;     
+long	istreg,    ievreg,    ievtyp,    iqual,     isynth;    
+long	unused17,  unused18,  unused19,  unused20,  unused21;  
+long	unused22,  unused23,  unused24,  unused25,  unused26;  
+long	leven,     lpspol,    lovrok,    lcalda,    unused27;  
+char	kstnm[8],  kevnm[16];           
+char	khole[8],  ko[8],     ka[8];               
+char	kt0[8],    kt1[8],    kt2[8];              
+char	kt3[8],    kt4[8],    kt5[8];              
+char	kt6[8],    kt7[8],    kt8[8];              
+char	kt9[8],    kf[8],     kuser0[8];           
+char	kuser1[8], kuser2[8], kcmpnm[8];           
+char	knetwk[8], kdatrd[8], kinst[8];            
+};
+X
+static struct sac_header sac_null = {
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345., -12345., -12345., -12345., -12345.,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+-12345, -12345, -12345, -12345, -12345,
+{ '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }, { '-','1','2','3','4','5',' ',' ' },
+{ '-','1','2','3','4','5',' ',' ' }
+};
+X
+/* defines for logical data types */
+#define TRUE    1
+#define FALSE   0
+X
+/* defines for enumerated data types */
+#define IREAL   0 
+#define ITIME   1 
+#define IRLIM   2 
+#define IAMPH   3 
+#define IXY     4 
+#define IUNKN   5 
+#define IDISP   6 
+#define IVEL    7 
+#define IACC    8 
+#define IB      9 
+#define IDAY   10 
+#define IO     11 
+#define IA     12 
+#define IT0    13 
+#define IT1    14 
+#define IT2    15 
+#define IT3    16 
+#define IT4    17 
+#define IT5    18 
+#define IT6    19 
+#define IT7    20 
+#define IT8    21 
+#define IT9    22 
+#define IRADNV 23 
+#define ITANNV 24 
+#define IRADEV 25 
+#define ITANEV 26 
+#define INORTH 27 
+#define IEAST  28 
+#define IHORZA 29 
+#define IDOWN  30 
+#define IUP    31 
+#define ILLLBB 32 
+#define IWWSN1 33 
+#define IWWSN2 34 
+#define IHGLP  35 
+#define ISRO   36 
+#define INUCL  37 
+#define IPREN  38 
+#define IPOSTN 39 
+#define IQUAKE 40 
+#define IPREQ  41 
+#define IPOSTQ 42 
+#define ICHEM  43 
+#define IOTHER 44 
+#define IGOOD  45 
+#define IGLCH  46 
+#define IDROP  47 
+#define ILOWSN 48 
+#define IRLDTA 49 
+#define IVOLTS 50 
+#define INIV51 51 
+#define INIV52 52 
+#define INIV53 53 
+#define INIV54 54 
+#define INIV55 55 
+#define INIV56 56 
+#define INIV57 57 
+#define INIV58 58 
+#define INIV59 59 
+#define INIV60 60
+X
+#define TEST "%12.5f%12.5f%12.5f%12.5f%12.5f\n"
+#define FCS "%15.7f%15.7f%15.7f%15.7f%15.7f\n"
+#define ICS "%10d%10d%10d%10d%10d\n"
+#define CCS1 "%-8.8s%-8.8s%-8.8s\n"
+#define CCS2 "%-8.8s%-16.16s\n"
+SHAR_EOF
+  $shar_touch -am 1017120198 'sac.h' &&
+  chmod 0600 'sac.h' ||
+  $echo 'restore of' 'sac.h' 'failed'
+  if ( md5sum --help 2>&1 | grep 'sage: md5sum \[' ) >/dev/null 2>&1 \
+  && ( md5sum --version 2>&1 | grep -v 'textutils 1.12' ) >/dev/null; then
+    md5sum -c << SHAR_EOF >/dev/null 2>&1 \
+    || $echo 'sac.h:' 'MD5 check failed'
+4709f15fa0763fc5fd4ad0bd4fc7a266  sac.h
+SHAR_EOF
+  else
+    shar_count="`LC_ALL= LC_CTYPE= LANG= wc -c < 'sac.h'`"
+    test 5128 -eq "$shar_count" ||
+    $echo 'sac.h:' 'original size' '5128,' 'current size' "$shar_count!"
+  fi
+fi
+# ============= sactosac.c ==============
+if test -f 'sactosac.c' && test "$first_param" != -c; then
+  $echo 'x -' SKIPPING 'sactosac.c' '(file already exists)'
+else
+  $echo 'x -' extracting 'sactosac.c' '(text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'sactosac.c' &&
+/*** sactosac.c  - examines header of a data file written by the SAC
+X *                 (Seismic Analysis Code) and switches it to the other
+X *                 machine type: little-endian to big-endian
+X *                 Based on saclinux2sun by G. A. Ichinose (1996)
+X *                 G. Helffrich/U. Bristol/Feb. 11, 1998
+X *                    bug in native conversion fixed Feb. 28, 2000
+X *
+X *   usage: sactosac [-fv] [files] ...
+X *      -f - force conversion even if format is native for machine on which
+X *           program is running.  Otherwise only converts files that are in
+X *           a different format than desired for current machine.
+X *      -v - verbose - describe what program is doing and what it is converting.
+X ***/
+#include <stdio.h>
+#include <errno.h>
+#include "sac.h"
+#define NUMHEADBYTES 632 /* floats and longs are 440 rest are characters */
+#define VERSION 6
+X
+extern char *sys_errlist[];
+extern int errno;
+X
+long long_swap(cbuf)
+X   char cbuf[];
+{
+X        union {
+X                char cval[4];
+X                long lval;
+X        } l_union;
+X        l_union.cval[0] = cbuf[3];
+X        l_union.cval[1] = cbuf[2];
+X        l_union.cval[2] = cbuf[1];
+X        l_union.cval[3] = cbuf[0];
+X        return(l_union.lval);
+}
+X
+float float_swap(cbuf)
+X   char cbuf[];
+{
+X        union {
+X                char cval[4];
+X                float fval;
+X        } f_union;
+X 
+X        f_union.cval[0] = cbuf[3];
+X        f_union.cval[1] = cbuf[2];
+X        f_union.cval[2] = cbuf[1];
+X        f_union.cval[3] = cbuf[0];
+X        return(f_union.fval);
+}
+X
+int main(ac,av)
+X   int ac;
+X   char **av;
+{
+X	struct sac_header sp;
+X	float *data, fbuf;
+X	long lbuf;
+X	int i, j;
+X	FILE *fp;
+X	float float_swap();
+X	long  long_swap();
+X	long nvh_native, nvh_other, npts;
+X	long *ptr;
+X	struct {int verbose, force;} opt;
+X
+X	opt.verbose = 0; opt.force = 0;
+X	
+X	nvh_native = VERSION; nvh_other = long_swap(&nvh_native);
+X
+X	if (ac == 1) { 
+X		fprintf(stderr, "Usage: %s [-vf] [sacfile(s)]\n", av[0]);
+X		exit(-1);
+X	}
+X	
+X	for( i = 1;  i < ac; i++) {
+X		if (*av[i] == '-') {
+X		/* Option, parse */
+X		   for (j=1;j<strlen(av[i]);j++)
+X		   switch (av[i][j]) {
+X		   case 'v':
+X		      opt.verbose = 1;
+X		      break;
+X		   case 'f':
+X		      opt.force = 1;
+X		      break;
+X		   default:
+X		      fprintf(stderr, "%s: Unknown option \"-%c\" ignored.\n",
+X			 av[0],av[i][j]);
+X		   }
+X		   continue;
+X		}
+X		if ( (fp = fopen(av[i], "r+")) == NULL) {
+X			fprintf(stderr, "%s Error opening file %s\n", av[0], av[i]);
+X			continue;
+X		}
+X
+X	/* set some sac header defaults *//* is this needed?...
+X		sp = sac_null;
+X		sp.internal4 = 6;
+X		sp.internal5 = 0;
+X		sp.internal6 = 0;
+X		sp.iftype = ITIME;
+X		sp.idep = IUNKN;
+X		sp.iztype = IB;
+X		sp.ievtyp = IUNKN;
+X		sp.leven = TRUE;
+X		sp.lpspol = FALSE;
+X		sp.lcalda = TRUE;
+X		sp.unused27 = FALSE;      ...suspect not */
+X
+X	/** read in header **/
+X		fread((char *)&sp, 440*sizeof(char), 1, fp);
+X		fread((char *)&sp.kstnm,(NUMHEADBYTES-440)*sizeof(char),1,fp);
+X
+X		if (sp.internal4 == nvh_native) {
+X		   if (opt.verbose) {
+X		      printf("%s appears to be a format native to this machine%s.\n",av[i],
+X		      opt.force ? ", converting anyway":"");
+X		   }
+X		   if (!opt.force) continue;
+X		   npts = sp.npts;
+X		} else if (sp.internal4 == nvh_other) {
+X		   if (opt.verbose)
+X		      printf("%s appears to be a non-native format to this machine.\n",av[i]);
+X		   npts = 0;
+X		} else {
+X		   fprintf(stderr,"%s: %s doesn't seem to be any kind of known SAC file, skipping.\n",av[0],av[i]);
+X		   continue;
+X		}
+X		if (opt.verbose && (sp.internal4 == nvh_native)) {
+X		   printf("%-4.4s GCARC %g B %g E %g", sp.kstnm,
+X			sp.delta, sp.b, sp.e);
+X		   printf("%d %d %02d:%02d:%06.3f   NPTS %d\n",
+X			sp.nzyear, sp.nzjday, sp.nzhour, sp.nzmin,
+X			sp.nzsec+sp.nzmsec/1000.0, sp.npts);
+X		}
+X		for (ptr=(long *)&sp,j=0;j<440/4;ptr++,j++)
+X		   *ptr = long_swap(ptr);
+X
+X		if (npts == 0) npts = sp.npts; /* Converted, now proper num */
+X		if (opt.verbose && (sp.internal4 == nvh_native)) {
+X		   printf("%-4.4s GCARC %g B %g E %g", sp.kstnm, sp.delta, sp.b, sp.e);
+X		   printf("%d %d %02d:%02d:%06.3f   NPTS %d\n",
+X			sp.nzyear, sp.nzjday, sp.nzhour, sp.nzmin,
+X			sp.nzsec+sp.nzmsec/1000.0, sp.npts);
+X		}
+X		
+X	/** read the data **/
+X		if (NULL == (data = (float *)malloc(npts*sizeof(float)))) {
+X		   fprintf(stderr,"%s: Can't get memory for %s data, skipping.\n",
+X		      av[0],av[i]);
+X		   fclose(fp);
+X		   continue;
+X		}
+X	        fread(data, sizeof(float), npts, fp);
+X		for ( j=0; j<npts; j++) {
+X			data[j] = (float) float_swap(&data[j]);
+X		}
+X
+X        /** write the header **/
+X		fseek(fp,0L,0);
+X		if (1 != fwrite(&sp, sizeof(struct sac_header), 1, fp)) {
+X		   fprintf(stderr,"%s: Error writing %s, %s.\n",av[0],av[i],
+X		      sys_errlist[errno]);
+X		} else if (npts != fwrite(&data[0], sizeof(float), npts, fp)) {
+X		   fprintf(stderr,"%s: Error writing %s\n",av[0],av[i]);
+X		}
+X		fclose(fp);
+X		free(data);
+X	}
+X	return 0;
+}
+SHAR_EOF
+  $shar_touch -am 02281843100 'sactosac.c' &&
+  chmod 0600 'sactosac.c' ||
+  $echo 'restore of' 'sactosac.c' 'failed'
+  if ( md5sum --help 2>&1 | grep 'sage: md5sum \[' ) >/dev/null 2>&1 \
+  && ( md5sum --version 2>&1 | grep -v 'textutils 1.12' ) >/dev/null; then
+    md5sum -c << SHAR_EOF >/dev/null 2>&1 \
+    || $echo 'sactosac.c:' 'MD5 check failed'
+0fedce0d88058c8f512e66ed2c16e0db  sactosac.c
+SHAR_EOF
+  else
+    shar_count="`LC_ALL= LC_CTYPE= LANG= wc -c < 'sactosac.c'`"
+    test 4860 -eq "$shar_count" ||
+    $echo 'sactosac.c:' 'original size' '4860,' 'current size' "$shar_count!"
+  fi
+fi
+rm -fr _sh00886
+exit 0

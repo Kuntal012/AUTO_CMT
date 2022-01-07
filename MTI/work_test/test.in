@@ -1,0 +1,25 @@
+6 3 1 300 2010 08 16 01 00 -122.2 48.8
+BS11_helm.dat 108.145370 210.083832 60 90
+C04A_helm.dat 133.420013 205.740982 60 90
+PL11_helm.dat 165.753067 205.746796 60 90
+W020_helm.dat 117.046379 208.486389 60 90
+W040_helm.dat 149.995880 207.534668 60 90
+W060_helm.dat 184.434586 207.151138 60 90
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs108d030 0 90 30
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs133d030 0 90 30
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs166d030 0 90 30
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs117d030 0 90 30
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs150d030 0 90 30
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs184d030 0 90 30
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs108d035 0 90 35
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs133d035 0 90 35
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs166d035 0 90 35
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs117d035 0 90 35
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs150d035 0 90 35
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs184d035 0 90 35
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs108d040 0 90 40
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs133d040 0 90 40
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs166d040 0 90 40
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs117d040 0 90 40
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs150d040 0 90 40
+/auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/cs184d040 0 90 40

@@ -1,0 +1,175 @@
+.TH GETARG 3 
+.SH NAME
+setarg, getarg, endarg \- get subroutine arguments from a string
+.SH SYNOPSIS
+.PP
+.B setarg(argstring, subname)
+.br
+.B char *argstring, *subname;
+.PP
+.B getarg(name, type, pointer)
+.br
+.B char *name, *type;
+.PP
+.B endarg()
+.PP
+The declaration for the argument
+.B pointer
+depends on
+.B type.
+.SH DESCRIPTION
+The
+.I getarg
+subroutines provide a simple procedure for passing optional arguments
+to subroutines.
+They are intended for use with subroutines that have a few essential
+arguments and many optional ones.
+The syntax of the calling procedures and the format of the
+parameter specifications is similar to
+.B getpar(3).
+The following subroutine program example illustrates the use of
+.I getarg.
+.IP "" 10
+sub(x,lx,list)
+.br
+float *x; int lx; char *list;
+.br
+   {
+.br
+	int opt1, boo;
+.br
+	float fopt2;
+.br
+	char title[40];
+.br
+
+.br
+	/* set defaults */
+.br
+	opt1= 10;
+.br
+	fopt2= 5.0;
+.br
+	title[0]= '\0';
+.br
+	boo= 1;	/* true */
+.br
+
+.br
+	setarg(list,"sub");	/* initialize getarg package */
+.br
+	getarg("opt1","d",&opt1);
+.br
+	getarg("fopt2","f",&fopt2);
+.br
+	getarg("title","s",title);
+.br
+	getarg("boo","b",&boo);
+.br
+	endarg();		/* deactivate getarg package */
+.br
+
+.br
+	/* rest of subroutine */
+.br
+   }
+.PP
+The mininial call to this subroutine would be
+.IP "" 10
+sub(x,lx,0);
+.ti -5
+or
+.br
+sub(x,lx,"");
+.PP
+in which case the default values of all the options are used.
+To change some of the options, the call would be
+.IP "" 10
+sub(x,lx,"opt1=100 fopt2=2.0 title='new title' noboo");
+.PP
+The format of the arguments within the string is of the form
+.I name=value.
+No imbedded blanks or tabs are allowed on either side of the equals sign.
+Character strings with white space are delimited by single quotes ('),
+which are removed by
+.I getarg.
+To get a single quote in a string, precede it with a back-slash (\\).
+The only exception to the
+.I name=value
+syntax are boolean variables which can simply be specified by
+.I name
+or
+.I noname
+to mean true or false respectively.
+.PP
+The subroutine
+.I setarg
+initializes the
+.I getarg
+package, and it must be called before any other references to
+.I getarg.
+Its two arguments are the subroutine name (for error reporting),
+and a character string that contains the optional arguments.
+The pointer to this string can be
+.I NULL.
+.PP
+The
+.I getarg
+subroutine has three arguments:
+.I name, type,
+and
+.I pointer.
+.I Name
+is the external name of the variable.
+.I Type
+specifies the type of variable.
+The currently understood types are:
+.IP "" 15
+"d"	integer
+.br
+"f"	float
+.br
+"s"	character string
+.br
+"b"	boolean (integer)
+.PP
+.I Pointer
+is a pointer to the type of variable indicated by
+.I type.
+If no occurences of the parameter
+.I name
+is found, the contents of
+.I pointer
+are not modified.
+If an argument is specified a number of times, the last occurence
+it used.
+.B NOTE,
+if the variables are defaulted by giving them initializations in
+static declarations,
+then subsequent calls to subroutines that use
+.I getarg
+may have their default values modified by previous calls.
+.PP
+The subroutine
+.I endarg()
+gracefully terminates the package.
+.SH AVAILABILITY
+The
+.I getarg
+routines are in the library
+.I /usr/lib/libget.a,
+which can be loaded with
+.I -lget
+.SH "SEE ALSO"
+getlist(3), getpar(3)
+.SH DIAGNOSTICS
+The routines produce error messages on
+.I stderr
+and terminate the program if
+.I setarg
+is not (properly) called, or if the arglist appears to be garbage.
+It attempts to report which subroutine was active when the error occured.
+.SH BUGS
+Probably.
+.SH AUTHOR
+Robert W. Clayton, Seismological Laboratory, Caltech, Pasadena, CA 91125

@@ -1,0 +1,65 @@
+Rdseed Version 4.7
+
+	This is the SEED reader program as distributed by the IRIS DMC.
+	The version will read SEED volumes up to version 2.4
+
+	The distribution includes all sources needed for compiling for the 
+	host computer.
+
+	The current version is developed for the Sun computer, but should be
+	compatible for other UNIX systems as well.
+
+	
+Installation:
+	
+	program name: rdseed
+
+	Use the tar command to "extract" binary and sources, i.e:
+		tar -xvf rdseed.tar .
+
+	(You already must have done this in order to be reading this now)
+
+	This will yield a top level directory named rdseed with
+	an executable, along with other miscellaneous files.
+
+	The C source files are located in the sub-directories.
+
+	Rename the appropriate executable for your operating system to rdseed 
+	and place in your path.
+	
+	To install without "make":
+		change directory to rdseed
+
+		simply copy rdseed into user's path. 	
+
+		copy the man pages rdseed.l into the man directory, typically
+		/usr/man/man? 
+
+	To recompile:	
+		change directory to rdseed
+
+		First to make sure we have a "clean" tar version, enter :
+			make clean
+				at the command line.
+
+		Edit the makefile's LDFLAGS variable to either:
+
+			Sun OS : LDFLAGS = -lm -lc
+
+		or
+			Solaris : LDFLAGS = -lm -lc -lnsl
+
+		Comment out one or the other entry in the makefile as
+		is appropriate for your system.
+
+		Then enter:
+			make
+
+				at the command line.
+
+		After a few minutes you will have an executable for your 
+		machine.
+	
+		Again, copy executable into your path, plus add the man page to
+		your man page directory as described above.
+

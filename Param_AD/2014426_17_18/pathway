@@ -1,0 +1,4 @@
+cp /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/OData/April14/20140426/17/*THIS*.SAC /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/Data/April14/20140426/17/
+cp /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/OData/April14/20140426/17/*CC16*.SAC /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/Data/April14/20140426/17/
+cp /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/OData/April14/20140426/17/*CC19*.SAC /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/Data/April14/20140426/17/
+cp -r /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/OData/April14/20140426/17/zp /rhome/kchau012/bigdata/Parkfield_VLFE/CMT/Data/April14/20140426/17/

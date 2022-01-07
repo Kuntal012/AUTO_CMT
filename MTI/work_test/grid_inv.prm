@@ -1,0 +1,9 @@
+LON -123,-122
+LAT 48,49
+DDEG 0.2
+DTIME 1
+MAXTIME 300
+DEPTH 30,35,40
+BTIME 60
+TWIND 90
+GFPATH /auto/home/aghosh/Ito_codes/test_codes/Cascadia/seisg/gf/
