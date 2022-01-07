@@ -1,4 +1,4 @@
-The Primary Wrapper is Based on matlab which uses shell scripting to interact with other codes
+The Primary Wrapper ( PF_CMT.m ) is Based on matlab which uses shell scripting to interact with other codes
 Things to Prepare before applying CMT
 
     1. Download the broadband seismic data in the the way shown in the folder (OData)
