@@ -1,7 +1,7 @@
 The Primary Wrapper is Based on matlab which uses shell scripting to interact with other codes
 Things to Prepare before applying CMT
 
-    1. Download the data in the the way shown in the folder (OData)
+    1. Download the broadband seismic data in the the way shown in the folder (OData)
     
     2. Change you compiler pathways in the moment tensor inversion codes (MTI folder)
     
